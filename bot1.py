@@ -3,15 +3,18 @@ from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 import requests
 
+# Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# API ключи
 WEATHER_API_KEY = 'b42c6a56beeb9d375d969a79ce6286be'
-TELEGRAM_TOKEN = '7460284853:AAHdxpy_qvyHoF-u5iq1K37tFHJ89X4NLrA'
+TELEGRAM_TOKEN = '7908654479:AAHx3cBkh6DgZaJMAlooCf_b7jKrMFJ-fko'
 NEWS_API_KEY = 'cacd0ef483324cca980117946259fd95'
 CURRENCY_API_KEY = 'ba3b9403583fdf701dc523e7'
 
+# Функции для получения информации
 def get_weather(lat, lon):
     url = f'http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={WEATHER_API_KEY}&units=metric'
     response = requests.get(url)
@@ -49,9 +52,10 @@ async def start(update: Update, context: CallbackContext):
         [KeyboardButton("Отправить геопозицию", request_location=True)],
         [KeyboardButton("Новости"), KeyboardButton("Курс валют")]
     ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-    await update.message.reply_text("Привет , я Илья , и я могу помочь тебе с погодой, новостями и курсом валют. Выбери опцию:", reply_markup=reply_markup)
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=False, resize_keyboard=True)
+    await update.message.reply_text("Привет, я Илья, и я могу помочь тебе с погодой, новостями и курсом валют. Выбери опцию:", reply_markup=reply_markup)
 
+# Обработка геопозиции
 async def handle_location(update: Update, context: CallbackContext):
     user_location = update.message.location
     latitude = user_location.latitude
@@ -59,10 +63,12 @@ async def handle_location(update: Update, context: CallbackContext):
     weather = get_weather(latitude, longitude)
     await update.message.reply_text(f"Ты находишься в точке {latitude}, {longitude}. {weather}")
 
+# Обработка новостей
 async def handle_news(update: Update, context: CallbackContext):
     news = get_news()
     await update.message.reply_text(news)
 
+# Обработка курса валют
 async def handle_exchange(update: Update, context: CallbackContext):
     exchange = get_exchange_rate()
     await update.message.reply_text(exchange)
@@ -70,12 +76,15 @@ async def handle_exchange(update: Update, context: CallbackContext):
 def main():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
+    # Обрабатываем команду /start
     application.add_handler(CommandHandler("start", start))
 
+    # Обработчики для различных запросов
     application.add_handler(MessageHandler(filters.LOCATION, handle_location))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^Новости$'), handle_news))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^Курс валют$'), handle_exchange))
 
+    # Запуск бота
     application.run_polling()
 
 if __name__ == '__main__':
